@@ -1,15 +1,18 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+)
 
-func (app *application) routes() *http.ServeMux {
+func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 
 	fileServer := http.FileServer(http.Dir(app.staticPath))
 	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
-	mux.HandleFunc("GET /home", app.home)
-	mux.HandleFunc("GET /snippet/{id}", app.snippetView)
-	mux.HandleFunc("POST /snippet", app.snippetCreate)
+	mux.Handle("GET /{$}", app.sessionManager.LoadAndSave(http.HandlerFunc(app.home)))
+	mux.Handle("GET /snippets/{id}/{$}", app.sessionManager.LoadAndSave(http.HandlerFunc(app.snippetView)))
+	mux.Handle("GET /snippets/{$}", app.sessionManager.LoadAndSave(http.HandlerFunc(app.snippetCreateForm)))
+	mux.Handle("POST /snippets/{$}", app.sessionManager.LoadAndSave(http.HandlerFunc(app.snippetCreate)))
 
-	return mux
+	return app.recoverPanic(app.logRequest(secureHeaders(mux)))
 }
