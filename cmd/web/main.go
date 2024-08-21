@@ -22,6 +22,7 @@ type application struct {
 	errorLog       *log.Logger
 	infoLog        *log.Logger
 	snippets       *models.SnippetModel
+	users          *models.UserModel
 	templateCache  map[string]*template.Template
 	sessionManager *scs.SessionManager
 }
@@ -33,9 +34,12 @@ func main() {
 
 	app.infoLog.Printf("Starting server on %v address...\n", app.address)
 	server := &http.Server{
-		Addr:     app.address,
-		ErrorLog: app.errorLog,
-		Handler:  app.routes(),
+		Addr:         app.address,
+		ErrorLog:     app.errorLog,
+		Handler:      app.routes(),
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 	err := server.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 	app.errorLog.Fatal(err)
@@ -55,6 +59,7 @@ func (app *application) initApp() {
 	}
 	app.db = db
 	app.snippets = &models.SnippetModel{DB: app.db}
+	app.users = &models.UserModel{DB: app.db}
 
 	templateCache, err := newTemplateCache()
 	if err != nil {

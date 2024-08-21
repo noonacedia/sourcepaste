@@ -2,45 +2,49 @@ package main
 
 import (
 	"html/template"
+	"io/fs"
 	"net/http"
 	"path/filepath"
 	"time"
 
+	"github.com/justinas/nosurf"
 	"github.com/noonacedia/sourcepaste/internal/models"
+	"github.com/noonacedia/sourcepaste/ui"
 )
 
 type templateData struct {
-	CurrentYear int
-	Snippet     *models.Snippet
-	Snippets    []*models.Snippet
-	Form        any
-	Flash       string
+	CurrentYear     int
+	Snippet         *models.Snippet
+	Snippets        []*models.Snippet
+	Form            any
+	Flash           string
+	IsAuthenticated bool
+	CSRFToken       string
 }
 
 func (app *application) newTemplateData(r *http.Request) *templateData {
-	year := time.Now().Year()
-	flash := app.sessionManager.PopString(r.Context(), "flash")
-	return &templateData{CurrentYear: year, Flash: flash}
+	return &templateData{
+		CurrentYear:     time.Now().Year(),
+		Flash:           app.sessionManager.PopString(r.Context(), "flash"),
+		IsAuthenticated: app.isAuthenticated(r),
+		CSRFToken:       nosurf.Token(r),
+	}
 }
 
 func newTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
-	pages, err := filepath.Glob("./ui/html/pages/*.html")
+	pages, err := fs.Glob(ui.Files, "html/pages/*.html")
 	if err != nil {
 		return nil, err
 	}
 	for _, page := range pages {
 		name := filepath.Base(page)
-		ts, err := template.ParseFiles("./ui/html/base.html")
-		if err != nil {
-			return nil, err
+		patterns := []string{
+			"html/base.html",
+			"html/partials/*.html",
+			page,
 		}
-		ts, err = ts.ParseGlob("./ui/html/partials/*.html")
-		if err != nil {
-			return nil, err
-		}
-
-		ts, err = ts.ParseFiles(page)
+		ts, err := template.New(name).ParseFS(ui.Files, patterns...)
 		if err != nil {
 			return nil, err
 		}
