@@ -11,6 +11,7 @@ func (app *application) routes() http.Handler {
 
 	fileServer := http.FileServer(http.FS(ui.Files))
 	mux.Handle("GET /static/{filepath...}", fileServer)
+	mux.HandleFunc("GET /ping/{$}", app.ping)
 	mux.Handle("GET /{$}", app.sessionManager.LoadAndSave(noSurf(app.authenticate(http.HandlerFunc(app.home)))))
 	mux.Handle("GET /snippets/{id}/{$}", app.sessionManager.LoadAndSave(noSurf(app.authenticate(http.HandlerFunc(app.snippetView)))))
 	mux.Handle("GET /snippets/{$}", app.sessionManager.LoadAndSave(noSurf(app.authenticate(app.requireAuthentication(http.HandlerFunc(app.snippetCreateForm))))))

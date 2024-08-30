@@ -30,6 +30,10 @@ type userLoginFormValidations struct {
 	validators.Validator
 }
 
+func (app *application) ping(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "It's OK")
+}
+
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	snippets, err := app.snippets.Latest()
 	if err != nil {

@@ -21,8 +21,8 @@ type application struct {
 	db             *sql.DB
 	errorLog       *log.Logger
 	infoLog        *log.Logger
-	snippets       *models.SnippetModel
-	users          *models.UserModel
+	snippets       models.SnippetInterface
+	users          models.UserInterface
 	templateCache  map[string]*template.Template
 	sessionManager *scs.SessionManager
 }
